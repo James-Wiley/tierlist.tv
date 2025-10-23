@@ -2,6 +2,79 @@
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
-    
+    ViewData["Title"] = "Join";
 }
-<h1>Join Page</h1>
+<h1 class="text-center my-4">Join Page</h1>
+<div class="container" style="max-width: 400px;">
+    <div class="mb-3">
+        <label for="userInput" class="form-label">Name</label>
+        <div class="input-group">
+            <input id="userInput" class="form-control" placeholder="Enter your name" />
+            <button id="joinBtn" class="btn btn-primary">Join</button>
+        </div>
+    </div>
+    <div id="helloSection" style="display:none;">
+        <div class="mb-3">
+            <label for="msgInput" class="form-label">Message</label>
+            <div class="input-group">
+                <input id="msgInput" class="form-control" placeholder="Type hello message" />
+                <button id="sendBtn" class="btn btn-success">Send Hello</button>
+            </div>
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Connected Users</label>
+        <ul id="userList" class="list-group mb-3"></ul>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Messages</label>
+        <ul id="messagesList" class="list-group"></ul>
+    </div>
+</div>
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/tierHub")
+            .build();
+
+        connection.on("ReceiveHello", (user, message) => {
+            const li = document.createElement("li");
+            li.textContent = `${user}: ${message}`;
+            document.getElementById("messagesList").appendChild(li);
+        });
+        connection.on("JoinConfirmed", (name) => {
+            document.getElementById("joinBtn").disabled = true;
+            document.getElementById("userInput").disabled = true;
+            document.getElementById("helloSection").style.display = "block";
+        });
+        connection.on("UserListUpdated", (users) => {
+            const ul = document.getElementById("userList");
+            ul.innerHTML = "";
+            users.forEach(u => {
+                const li = document.createElement("li");
+                li.textContent = u;
+                ul.appendChild(li);
+            });
+        });
+
+        document.getElementById("joinBtn").onclick = async () => {
+            const name = document.getElementById("userInput").value || "Anonymous";
+            await connection.invoke("JoinGame", name);
+        };
+        document.getElementById("sendBtn").onclick = async () => {
+            const user = document.getElementById("userInput").value || "Anonymous";
+            const msg = document.getElementById("msgInput").value;
+            await connection.invoke("SendHello", user, msg);
+        };
+        document.getElementById("helloSection").style.display = "none";
+        (async () => {
+            try {
+                await connection.start();
+                console.log("SignalR connected (Join page)");
+            } catch (err) {
+                console.error("SignalR connection error (Join page):", err);
+            }
+        })();
+    </script>
+}

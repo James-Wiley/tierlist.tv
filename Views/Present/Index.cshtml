@@ -2,5 +2,31 @@
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
+    ViewData["Title"] = "Present";
 }
 <h1>Present Page</h1>
+<ul id="messagesList"></ul>
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/tierHub")
+            .build();
+
+        connection.on("ReceiveHello", (user, message) => {
+            const li = document.createElement("li");
+            li.textContent = `${user}: ${message}`;
+            document.getElementById("messagesList").appendChild(li);
+        });
+
+        // making sure connected
+        (async () => {
+            try {
+                await connection.start();
+                console.log("SignalR connected (Present page)");
+            } catch (err) {
+                console.error("SignalR connection error (Present page):", err);
+            }
+        })();
+    </script>
+}
